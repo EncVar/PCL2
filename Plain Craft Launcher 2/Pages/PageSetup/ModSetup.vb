@@ -96,6 +96,7 @@
         {"LaunchRamCustom", New SetupEntry(15)},
         {"LinkEula", New SetupEntry(False, Source:=SetupSource.Registry)},
         {"LinkName", New SetupEntry("", Source:=SetupSource.Registry)},
+        {"LinkSave", New SetupEntry(True)},
         {"LinkHiperCertLast", New SetupEntry("", Source:=SetupSource.Registry)},
         {"LinkHiperCertTime", New SetupEntry("", Source:=SetupSource.Registry)},
         {"LinkHiperCertWarn", New SetupEntry(True, Source:=SetupSource.Registry)},

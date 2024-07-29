@@ -1891,12 +1891,129 @@ NextVersion:
             Log(ex, "更新 options.txt 失败", LogLevel.Hint)
         End Try
 
+        '链接存档文件夹
+        If True Then
+
+            McLaunchLog($"{PathMcFolder}saves")
+            If Not My.Computer.FileSystem.DirectoryExists($"{PathMcFolder}saves") Then
+                My.Computer.FileSystem.CreateDirectory($"{PathMcFolder}saves")
+            End If
+
+            Dim Proc As Process = New Process()
+            Proc.StartInfo.FileName = "cmd.exe"
+            Proc.StartInfo.Arguments = "/C " & $"mklink /J ""{McVersionCurrent.Path}saves"" ""{PathMcFolder}saves"""
+            Proc.StartInfo.UseShellExecute = False
+            Proc.StartInfo.RedirectStandardOutput = True
+            Proc.StartInfo.RedirectStandardError = True
+            Proc.StartInfo.CreateNoWindow = True
+            Dim IndieType As Integer = Setup.Get("LaunchArgumentIndie")
+            Select Case Setup.Get("VersionArgumentIndie", Version:=McVersionCurrent)
+                Case -1
+                    '尚未判断
+                    Dim ModFolder As New DirectoryInfo(McVersionCurrent.Path & "mods\")
+                    Dim SaveFolder As New DirectoryInfo(McVersionCurrent.Path & "saves\")
+                    If (ModFolder.Exists AndAlso ModFolder.EnumerateFiles.Any) OrElse
+                           (SaveFolder.Exists AndAlso SaveFolder.EnumerateFiles.Any) Then
+                        '自动开启
+                        Setup.Set("VersionArgumentIndie", 1, Version:=McVersionCurrent)
+                        Log("[Setup] 已自动开启单版本隔离：" & McVersionCurrent.Name)
+                        IndieType = 4
+                    Else
+                        '使用全局设置
+                        Setup.Set("VersionArgumentIndie", 0, Version:=McVersionCurrent)
+                        Log("[Setup] 版本隔离使用全局设置：" & McVersionCurrent.Name)
+                    End If
+                Case 0
+                    '使用全局设置
+                Case 1
+                    '开启
+                    IndieType = 4
+                Case 2
+                    '关闭
+                    IndieType = 0
+            End Select
+            Select Case IndieType
+                Case 0 '关闭
+                Case 1 '仅隔离可安装 Mod 的版本
+                    If McVersionCurrent.Modable Then
+                        Proc.Start()
+                        If My.Computer.FileSystem.DirectoryExists($"{McVersionCurrent.Path}saves") Then
+                            ' My.Computer.FileSystem.CreateDirectory($"{McVersionCurrent.Path}saves")
+                            For Each File As String In My.Computer.FileSystem.GetFiles($"{McVersionCurrent.Path}saves")
+                                Dim FileName As String = GetFileNameFromPath(File)
+                                Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", FileName)
+                                System.IO.File.Move(File, DestPath)
+                            Next
+                            For Each Dir As String In My.Computer.FileSystem.GetDirectories($"{McVersionCurrent.Path}saves")
+                                Dim DirName As String = GetFolderNameFromPath(Dir)
+                                Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", DirName)
+                                System.IO.Directory.Move(Dir, DestPath)
+                            Next
+                            My.Computer.FileSystem.DeleteDirectory($"{McVersionCurrent.Path}saves", FileIO.DeleteDirectoryOption.DeleteAllContents)
+                        End If
+                    End If
+                Case 2 '仅隔离非正式版
+                    If McVersionCurrent.State = McVersionState.Fool OrElse McVersionCurrent.State = McVersionState.Old OrElse McVersionCurrent.State = McVersionState.Snapshot Then
+                        Proc.Start()
+                        If My.Computer.FileSystem.DirectoryExists($"{McVersionCurrent.Path}saves") Then
+                            ' My.Computer.FileSystem.CreateDirectory($"{McVersionCurrent.Path}saves")
+                            For Each File As String In My.Computer.FileSystem.GetFiles($"{McVersionCurrent.Path}saves")
+                                Dim FileName As String = GetFileNameFromPath(File)
+                                Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", FileName)
+                                System.IO.File.Move(File, DestPath)
+                            Next
+                            For Each Dir As String In My.Computer.FileSystem.GetDirectories($"{McVersionCurrent.Path}saves")
+                                Dim DirName As String = GetFolderNameFromPath(Dir)
+                                Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", DirName)
+                                System.IO.Directory.Move(Dir, DestPath)
+                            Next
+                            My.Computer.FileSystem.DeleteDirectory($"{McVersionCurrent.Path}saves", FileIO.DeleteDirectoryOption.DeleteAllContents)
+                        End If
+                    End If
+                Case 3 '隔离非正式版与可安装 Mod 的版本
+                    If McVersionCurrent.State = McVersionState.Fool OrElse McVersionCurrent.State = McVersionState.Old OrElse McVersionCurrent.State = McVersionState.Snapshot OrElse McVersionCurrent.Modable Then
+                        Proc.Start()
+                        If My.Computer.FileSystem.DirectoryExists($"{McVersionCurrent.Path}saves") Then
+                            ' My.Computer.FileSystem.CreateDirectory($"{McVersionCurrent.Path}saves")
+                            For Each File As String In My.Computer.FileSystem.GetFiles($"{McVersionCurrent.Path}saves")
+                                Dim FileName As String = GetFileNameFromPath(File)
+                                Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", FileName)
+                                System.IO.File.Move(File, DestPath)
+                            Next
+                            For Each Dir As String In My.Computer.FileSystem.GetDirectories($"{McVersionCurrent.Path}saves")
+                                Dim DirName As String = GetFolderNameFromPath(Dir)
+                                Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", DirName)
+                                System.IO.Directory.Move(Dir, DestPath)
+                            Next
+                            My.Computer.FileSystem.DeleteDirectory($"{McVersionCurrent.Path}saves", FileIO.DeleteDirectoryOption.DeleteAllContents)
+                        End If
+                    End If
+                Case 4 '隔离所有版本
+                    Proc.Start()
+                    If My.Computer.FileSystem.DirectoryExists($"{McVersionCurrent.Path}saves") Then
+                        ' My.Computer.FileSystem.CreateDirectory($"{McVersionCurrent.Path}saves")
+                        For Each File As String In My.Computer.FileSystem.GetFiles($"{McVersionCurrent.Path}saves")
+                            Dim FileName As String = GetFileNameFromPath(File)
+                            Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", FileName)
+                            System.IO.File.Move(File, DestPath)
+                        Next
+                        For Each Dir As String In My.Computer.FileSystem.GetDirectories($"{McVersionCurrent.Path}saves")
+                            Dim DirName As String = GetFolderNameFromPath(Dir)
+                            Dim DestPath As String = System.IO.Path.Combine($"{PathMcFolder}saves", DirName)
+                            System.IO.Directory.Move(Dir, DestPath)
+                        Next
+                        My.Computer.FileSystem.DeleteDirectory($"{McVersionCurrent.Path}saves", FileIO.DeleteDirectoryOption.DeleteAllContents)
+                    End If
+            End Select
+            McLaunchLog("存档目录链接完毕")
+        End If
+
         '离线皮肤 Alex 警告
         Try
             If McVersionCurrent.Version.McCodeMain <= 7 AndAlso McVersionCurrent.Version.McCodeMain >= 2 AndAlso '1.7 ~ 1.2
-               McLoginLoader.Input.Type = McLoginType.Legacy AndAlso '离线登录
-               (Setup.Get("LaunchSkinType") = 2 OrElse '强制 Alex
-               (Setup.Get("LaunchSkinType") = 4 AndAlso Setup.Get("LaunchSkinSlim"))) Then '或选用 Alex 皮肤
+                McLoginLoader.Input.Type = McLoginType.Legacy AndAlso '离线登录
+                (Setup.Get("LaunchSkinType") = 2 OrElse '强制 Alex
+                (Setup.Get("LaunchSkinType") = 4 AndAlso Setup.Get("LaunchSkinSlim"))) Then '或选用 Alex 皮肤
                 Hint("此 Minecraft 版本尚不支持 Alex 皮肤，你的皮肤可能会显示为 Steve！", HintType.Critical)
             End If
         Catch ex As Exception
